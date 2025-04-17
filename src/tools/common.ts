@@ -34,7 +34,7 @@ const wait: ToolFactory = captureSnapshot => ({
 
   handle: async (context, params) => {
     const validatedParams = waitSchema.parse(params);
-    await new Promise(f => setTimeout(f, Math.min(10000, validatedParams.time * 1000)));
+    await new Promise(f => setTimeout(f, validatedParams.time * 1000));
     return {
       code: [`// Waited for ${validatedParams.time} seconds`],
       captureSnapshot,
@@ -100,8 +100,30 @@ const resize: ToolFactory = captureSnapshot => ({
   },
 });
 
+const getHTMLSchema = z.object({});
+
+const getHTML: Tool = {
+  capability: 'core',
+  schema: {
+    name: 'get_html',
+    description: 'Get the current page HTML code',
+    inputSchema: zodToJsonSchema(getHTMLSchema),
+  },
+  handle: async context => {
+    const tab = context.currentTab();
+    const innerHTML = await tab.page.content();
+    return {
+      content: [{
+        type: 'text',
+        text: innerHTML,
+      }],
+    };
+  },
+};
+
 export default (captureSnapshot: boolean) => [
   close,
   wait(captureSnapshot),
-  resize(captureSnapshot)
+  resize(captureSnapshot),
+  getHTML,
 ];

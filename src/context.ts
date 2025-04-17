@@ -89,8 +89,8 @@ export class Context {
     await this._currentTab.page.bringToFront();
   }
 
-  async ensureTab(): Promise<Tab> {
-    const context = await this._ensureBrowserContext();
+  async ensureTab(name: string = ""): Promise<Tab> {
+    const context = await this._ensureBrowserContext(name);
     if (!this._currentTab)
       await context.newPage();
     return this._currentTab!;
@@ -223,9 +223,9 @@ ${code.join('\n')}
     }).catch(() => {});
   }
 
-  private async _ensureBrowserContext() {
+  private async _ensureBrowserContext(name: string = "") {
     if (!this._browserContext) {
-      const context = await this._createBrowserContext();
+      const context = await this._createBrowserContext(name);
       this._browser = context.browser;
       this._browserContext = context.browserContext;
       for (const page of this._browserContext.pages())
@@ -235,7 +235,7 @@ ${code.join('\n')}
     return this._browserContext;
   }
 
-  private async _createBrowserContext(): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
+  private async _createBrowserContext(name: string): Promise<{ browser?: playwright.Browser, browserContext: playwright.BrowserContext }> {
     if (this.options.remoteEndpoint) {
       const url = new URL(this.options.remoteEndpoint);
       if (this.options.browserName)
@@ -253,14 +253,15 @@ ${code.join('\n')}
       return { browser, browserContext };
     }
 
-    const browserContext = await this._launchPersistentContext();
+    const browserContext = await this._launchPersistentContext(name);
     return { browserContext };
   }
 
-  private async _launchPersistentContext(): Promise<playwright.BrowserContext> {
+  private async _launchPersistentContext(name: string): Promise<playwright.BrowserContext> {
     try {
       const browserType = this.options.browserName ? playwright[this.options.browserName] : playwright.chromium;
-      return await browserType.launchPersistentContext(this.options.userDataDir, this.options.launchOptions);
+      const _options = {recordVideo: {dir: `testVideos/${name}`}, ...this.options.launchOptions}
+      return await browserType.launchPersistentContext(this.options.userDataDir, _options);
     } catch (error: any) {
       if (error.message.includes('Executable doesn\'t exist'))
         throw new Error(`Browser specified in your config is not installed. Either install it (likely) or change the config.`);

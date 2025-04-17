@@ -21,6 +21,7 @@ import type { ToolFactory } from './tool';
 
 const navigateSchema = z.object({
   url: z.string().describe('The URL to navigate to'),
+  name: z.string().describe("The name of the test being run")
 });
 
 const navigate: ToolFactory = captureSnapshot => ({
@@ -34,7 +35,7 @@ const navigate: ToolFactory = captureSnapshot => ({
 
   handle: async (context, params) => {
     const validatedParams = navigateSchema.parse(params);
-    const tab = await context.ensureTab();
+    const tab = await context.ensureTab(validatedParams.name);
     await tab.navigate(validatedParams.url);
 
     const code = [
